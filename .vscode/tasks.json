@@ -12,7 +12,7 @@
                 // "${workspaceFolder}\\${fileBasenameNoExtension}.exe"
                 "${workspaceFolder}\\server.exe",  
                 "-I", "C:\\boost\\include\\boost-1_78", "-I", "D:\\Git\\Server_Client_GL\\include",
-                "-I", "D:\\Git\\Server_Client_GL\\libs\\cli\\include", "-lws2_32", "-lwsock32"
+                "-I", "D:\\Git\\Simple_Server_Client\\libs\\cli\\include", "-lws2_32", "-lwsock32"
             ],
             "options": {
                 "cwd": "${workspaceFolder}\\src\\"

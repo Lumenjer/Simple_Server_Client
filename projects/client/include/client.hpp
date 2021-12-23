@@ -3,6 +3,8 @@
 #define _SERVER_HPP_
 
 #include <boost/asio.hpp>
+#include <memory>
+#include "clientUI.hpp"
 
 #if BOOST_VERSION < 106600
 using IoContext = boost::asio::io_service;
@@ -10,48 +12,69 @@ using IoContext = boost::asio::io_service;
 using IoContext = boost::asio::io_context;
 #endif
 
-class ConectHandler;
-class Client : std::enable_shared_from_this<Client>, boost::asio::noncopyable {
+class ClientUI;
+class ConnectHandler;
+class Client : boost::asio::noncopyable {
 public:
-   Client(IoContext &iocontext, std::string address, unsigned int port)
-      : iocontext(iocontext), address_(address), port_(port) {}
-   void handle_accept(std::shared_ptr<ConectHandler> con, const boost::system::error_code &err);
+   Client(std::string address, unsigned int port)
+      : iocontext_(), address_(address), port_(port),
+         ui_(*this), connect_(std::make_shared<ConnectHandler>(*this)) {
+      }
+   // void handle_accept(std::shared_ptr<ConnectHandler> con, const boost::system::error_code &err);
 
-   void start();
-   void stop();
+   // void start();
+   // void stop();
+   void run();
    void connect(std::string param);
-   bool isStarted() { return started_; }
+   void connect();
+   bool is_connected() { return connected_; }
    void set_port(int port);
-   int getPort() { return port_; }
-   std::string get_address() { return address_; }
+   void send_msg(std::vector<std::string> data);
+   void set_connected(bool connected) { connected_ = connected;}
+   bool get_connected() { return connected_;}
    bool set_address(std::string address);
-   void send_msg(std::vector<std::string> msg);
+   int get_port() { return port_; }
+   std::string get_address() { return address_; }
+   IoContext &getIOcontext(){return iocontext_;}
+   std::string print_prompt();
 private:
    boost::asio::ip::tcp::acceptor *acceptor_ = nullptr;
-   IoContext &iocontext;
-   int port_ = 80;                // TODO: change
-   std::string address_ = "127.0.0.1"; // TODO: change
-   bool started_ = false;
-   void start_accept();
+   IoContext iocontext_;
+   ClientUI ui_;
+   std::shared_ptr<ConnectHandler> connect_;
+   unsigned int port_;                // TODO: change
+   std::string address_; // TODO: change
+   bool connected_ = false;
+   // void start_accept();
 };
 
-class ConectHandler : public std::enable_shared_from_this<ConectHandler>, boost::asio::noncopyable {
+
+
+class ConnectHandler : public std::enable_shared_from_this<ConnectHandler>, boost::asio::noncopyable {
 public:
-   ConectHandler(IoContext &iocontext) : sock(iocontext) {}
-   ConectHandler(IoContext &iocontext, std::string msg) : sock(iocontext), msg(msg) {
+   ConnectHandler(Client &client) 
+         : client_(client), sock_(client.getIOcontext()), timer_(client.getIOcontext()) {
    }
-   boost::asio::ip::tcp::socket &socket() {return sock;}
+   boost::asio::ip::tcp::socket &socket() {return sock_;}
    void read();
    void write();
-   void send(boost::asio::ip::tcp::endpoint ep);
+   void send(boost::asio::ip::tcp::endpoint ep, std::string msg);
+   void connect(boost::asio::ip::tcp::endpoint ep);
    void handle_read(const boost::system::error_code &err, size_t bytes_transferred);
    void handle_write(const boost::system::error_code &err, size_t bytes_transferred);
    void on_connect(const boost::system::error_code &err);
+   void ping(const boost::system::error_code &err);
+   void postpone_ping();
 private:
-   boost::asio::ip::tcp::socket sock;
-   std::string msg = "";
+   Client &client_;
+   boost::asio::ip::tcp::socket sock_;
+   std::string msg_;
+   std::string received_;
+   boost::asio::ip::tcp::endpoint ep_;
+   boost::asio::deadline_timer timer_;
+   bool started_;
    enum {max_length = 1024};
-   char data[max_length];
+   char data_[max_length];
 };
 
 class TimeStamp {

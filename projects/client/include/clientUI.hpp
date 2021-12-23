@@ -15,16 +15,17 @@ class Client;
 
 class ClientUI {
 public:
-   ClientUI(IoContext &iocontext, Client &client);
+   ClientUI(Client &client);
+   void Prompt(){ localSession->Prompt(); }
 private:
    void printTwist(int qt = 20);
-   boost::asio::deadline_timer timer;
+   Client &client_;
+   boost::asio::deadline_timer timer_;
    cli::BoostAsioScheduler scheduler;
    std::unique_ptr<cli::Cli> cli;
    std::unique_ptr<cli::CliLocalTerminalSession> localSession;
    cli::CmdHandler colorCmd;
    cli::CmdHandler nocolorCmd;
-   Client &client;
 };
 
 #endif // _CLIUI_HPP_

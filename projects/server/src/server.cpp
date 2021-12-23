@@ -15,13 +15,13 @@ using err_code = boost::system::error_code;
 
 
 
-void Server::printPromt() {
-   if (ui)
-      ui->Prompt();
+string Server::print_prompt() {
+   ui_.Prompt();
+   return "";
 }
 
 void Server::start_accept() {
-   shared_ptr<ConnectHandler> connect = make_shared<ConnectHandler>(iocontext, *this);
+   shared_ptr<ConnectHandler> connect = make_shared<ConnectHandler>(*this);
    acceptor_->async_accept(connect->socket(),
                            boost::bind(&Server::handle_accept, this, connect,
                                        error));
@@ -36,6 +36,15 @@ void Server::handle_accept(shared_ptr<ConnectHandler> connect, const err_code &e
    start_accept();
 }
 
+void Server::run(){
+#if BOOST_VERSION < 106600
+      boost::asio::io_service::work work(iocontext_);
+#else
+      auto work = boost::asio::make_work_guard(iocontext_);
+#endif
+      iocontext_.run();
+}
+
 void Server::start() { // TODO: change
    if (started_) {
       cout << "Server already started! \n";
@@ -47,7 +56,7 @@ void Server::start() { // TODO: change
       if (ec){
          cerr << "Can't start, wrong address, error " << ec << endl;
       }
-      acceptor_ = new boost::asio::ip::tcp::acceptor(iocontext, boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address_), port_));
+      acceptor_ = new boost::asio::ip::tcp::acceptor(iocontext_, boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address_), port_));
       start_accept();
       started_ = true;
    }
@@ -62,10 +71,9 @@ void Server::stop() {
    else {
       err_code ec;
       acceptor_->close(ec);
-      if (ec)
-      {
-      cerr << "Acceptor close error: " << ec << endl;
-      return;
+      if (ec) {
+         cerr << "Acceptor close error: " << ec << endl;
+         return;
       }
       delete acceptor_;
       started_ = false;
@@ -91,18 +99,18 @@ void Server::set_port(unsigned int port) {
 }
 
 void ConnectHandler::read() {
-   sock.async_read_some(
-      boost::asio::buffer(data, max_length),
+   sock_.async_read_some(
+      boost::asio::buffer(data_, max_length),
       boost::bind(&ConnectHandler::handle_read,
                   shared_from_this(),
                   error,
                   bytes_transferred));
 }
 
-void ConnectHandler::write() {
-   msg = data;
-   sock.async_write_some(
-      boost::asio::buffer(msg, max_length),
+void ConnectHandler::write(string msg) {
+   msg_ = msg;
+   sock_.async_write_some(
+      boost::asio::buffer(msg_, max_length),
       boost::bind(&ConnectHandler::handle_write,
                   shared_from_this(),
                   error,
@@ -110,24 +118,35 @@ void ConnectHandler::write() {
 }
 
 void ConnectHandler::handle_read(const err_code &err, size_t bytes_transferred) {
-   if (!err) {
-      cout << endl << TimeStamp::getTimeStamp().c_str() << " Message from " 
-         << sock.remote_endpoint().address().to_string().c_str() << " with data:" << endl
-         <<  string(data, bytes_transferred) << endl;
-      server.printPromt();
+   if (err) {
+      cerr << "Read error: " << err.message() << endl << server_.print_prompt();
+      sock_.close();
+      return;
    }
-   else {
-      cerr << "error: " << err.message() << endl;
-      sock.close();
+   string tmp(data_, bytes_transferred);
+   if (tmp == "connect") {
+      write("connected");
+      cout << "connected";
    }
-   write();
+   else if (tmp == "ping"){
+      write("ping");
+      cout << "ping";
+   }
+   else
+      write("OK");
+   cout << endl << TimeStamp::getTimeStamp() << " Message from " 
+         << sock_.remote_endpoint().address() << " with data:" << endl
+         <<  tmp << endl << server_.print_prompt();
+
 }
 
 void ConnectHandler::handle_write(const err_code &err, size_t bytes_transferred) {
    if (err) {
-      cerr << "error: " << err.message() << endl;
-      sock.close();
+      cerr << "\nWrite error: " << err.message() << endl << server_.print_prompt();
+      sock_.close();
+      return;
    }
+   sock_.close();
 }
 
 const string TimeStamp::getTimeStamp() {
