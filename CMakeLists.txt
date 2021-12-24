@@ -13,7 +13,7 @@ FetchContent_MakeAvailable(cli)
 
 include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
 link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
-find_package(Boost 1.78 REQUIRED)
+find_package(Boost 1.70 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 if(WIN32)
