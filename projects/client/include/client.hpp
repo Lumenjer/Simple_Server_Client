@@ -18,15 +18,11 @@ class Client : boost::asio::noncopyable {
 public:
    Client(std::string address, unsigned int port)
       : iocontext_(), address_(address), port_(port),
-         ui_(*this), connect_(std::make_shared<ConnectHandler>(*this)) {
-      }
-   // void handle_accept(std::shared_ptr<ConnectHandler> con, const boost::system::error_code &err);
-
-   // void start();
-   // void stop();
+        ui_(*this), connect_(std::make_shared<ConnectHandler>(*this)) {}
    void run();
    void connect(std::string param);
    void connect();
+   void disconnect();
    bool is_connected() { return connected_; }
    void set_port(int port);
    void send_msg(std::vector<std::string> data);
@@ -36,16 +32,15 @@ public:
    int get_port() { return port_; }
    std::string get_address() { return address_; }
    IoContext &getIOcontext(){return iocontext_;}
-   std::string print_prompt();
+   std::string print_prompt();               // trick for print cli name
 private:
    boost::asio::ip::tcp::acceptor *acceptor_ = nullptr;
    IoContext iocontext_;
    ClientUI ui_;
    std::shared_ptr<ConnectHandler> connect_;
-   unsigned int port_;                // TODO: change
-   std::string address_; // TODO: change
+   unsigned int port_;
+   std::string address_;
    bool connected_ = false;
-   // void start_accept();
 };
 
 
@@ -65,6 +60,7 @@ public:
    void on_connect(const boost::system::error_code &err);
    void ping(const boost::system::error_code &err);
    void postpone_ping();
+   void close();
 private:
    Client &client_;
    boost::asio::ip::tcp::socket sock_;

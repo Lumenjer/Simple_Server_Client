@@ -12,7 +12,7 @@
 using namespace std;
 using namespace boost::asio::placeholders;
 using err_code = boost::system::error_code;
-
+using end_point = boost::asio::ip::tcp::endpoint;
 
 
 string Server::print_prompt() {
@@ -45,7 +45,7 @@ void Server::run(){
       iocontext_.run();
 }
 
-void Server::start() { // TODO: change
+void Server::start() {
    if (started_) {
       cout << "Server already started! \n";
       return;
@@ -99,15 +99,20 @@ void Server::set_port(unsigned int port) {
 }
 
 void ConnectHandler::read() {
+   if (!server_.is_started())
+      return;
    sock_.async_read_some(
       boost::asio::buffer(data_, max_length),
       boost::bind(&ConnectHandler::handle_read,
                   shared_from_this(),
                   error,
                   bytes_transferred));
+   postpone_close();
 }
 
 void ConnectHandler::write(string msg) {
+   if (!server_.is_started())
+      return;
    msg_ = msg;
    sock_.async_write_some(
       boost::asio::buffer(msg_, max_length),
@@ -115,38 +120,67 @@ void ConnectHandler::write(string msg) {
                   shared_from_this(),
                   error,
                   bytes_transferred));
+   postpone_close();
 }
 
 void ConnectHandler::handle_read(const err_code &err, size_t bytes_transferred) {
+   if (!server_.is_started())
+      return;
    if (err) {
       cerr << "Read error: " << err.message() << endl << server_.print_prompt();
-      sock_.close();
+      close();
       return;
    }
    string tmp(data_, bytes_transferred);
    if (tmp == "connect") {
       write("connected");
-      cout << "connected";
+      cout << endl << TimeStamp::getTimeStamp() << " Client from "
+           << sock_.remote_endpoint() << " connected"
+           << endl << server_.print_prompt();
    }
    else if (tmp == "ping"){
       write("ping");
-      cout << "ping";
    }
-   else
+   else{
       write("OK");
-   cout << endl << TimeStamp::getTimeStamp() << " Message from " 
-         << sock_.remote_endpoint().address() << " with data:" << endl
-         <<  tmp << endl << server_.print_prompt();
-
+      cout << endl << TimeStamp::getTimeStamp() << " Message from " 
+           << sock_.remote_endpoint() << " with data:" << endl
+           << tmp << endl << server_.print_prompt();
+   }
 }
 
 void ConnectHandler::handle_write(const err_code &err, size_t bytes_transferred) {
+   if (!server_.is_started())
+      return;
    if (err) {
       cerr << "\nWrite error: " << err.message() << endl << server_.print_prompt();
-      sock_.close();
+      close();
       return;
    }
-   sock_.close();
+   if (server_.is_started())
+      read();
+   else
+      close();
+}
+
+
+void ConnectHandler::close(const err_code &err){
+   if (err)
+      return;
+   close();
+}
+void ConnectHandler::close(){
+   cout << endl << TimeStamp::getTimeStamp() << " Client from "
+      << sock_.remote_endpoint() << " disconnected"
+      << endl << server_.print_prompt();
+   err_code err;
+   timer_.cancel(err);
+   shared_from_this().reset();
+}
+
+void ConnectHandler::postpone_close(){
+   timer_.expires_from_now(boost::posix_time::millisec(10000));
+	timer_.async_wait(boost::bind(&ConnectHandler::close, shared_from_this(), error));
 }
 
 const string TimeStamp::getTimeStamp() {

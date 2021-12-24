@@ -25,7 +25,13 @@ ClientUI::ClientUI(Client &client)
       [&](ostream &out) {
          client.connect();
       },
-      "Connect via setted address and port");
+      "Connect to server via setted address and port");
+   rootMenu->Insert(
+      "disconnect",
+      [&](ostream &out) {
+         client.disconnect();
+      },
+      "Disconnect from server");
    rootMenu->Insert(
       "status",
       [&](ostream &out) {
