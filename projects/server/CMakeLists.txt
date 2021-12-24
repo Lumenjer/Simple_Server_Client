@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.1)
-project(server_echo VERSION 0.1.0)
+project(server VERSION 0.1.0)
 
 include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
 link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
@@ -10,9 +10,9 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/serverUI.cpp
 )
 
-add_executable(server_echo ${SOURCES})
+add_executable(server ${SOURCES})
 target_include_directories(
-  server_echo
+  server
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include/
 )

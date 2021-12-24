@@ -31,11 +31,7 @@ using end_point = boost::asio::ip::tcp::endpoint;
 
 void Client::run(){
    cout << "\rDefault address: " << address_ << ":" << port_ << endl << print_prompt();
-#if BOOST_VERSION < 106600
-   boost::asio::io_service::work work(iocontext_);
-#else
    auto work = boost::asio::make_work_guard(iocontext_);
-#endif
    iocontext_.run();
 }
 

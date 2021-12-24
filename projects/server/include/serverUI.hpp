@@ -6,11 +6,8 @@
 #include <cli/cli.h>
 #include <cli/clilocalsession.h>
 
-#if BOOST_VERSION < 106600
-using IoContext = boost::asio::io_service;
-#else
 using IoContext = boost::asio::io_context;
-#endif
+
 class Server;
 
 class ServerUI {

@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.11)
-project(SERVER_CLIENT_ECHO VERSION 0.1.0)
+cmake_minimum_required(VERSION 3.22)
+project(SERVER_CLIENT VERSION 0.1.0)
 include(FetchContent)
 
 

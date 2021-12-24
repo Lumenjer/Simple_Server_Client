@@ -37,12 +37,8 @@ void Server::handle_accept(shared_ptr<ConnectHandler> connect, const err_code &e
 }
 
 void Server::run(){
-#if BOOST_VERSION < 106600
-      boost::asio::io_service::work work(iocontext_);
-#else
-      auto work = boost::asio::make_work_guard(iocontext_);
-#endif
-      iocontext_.run();
+   auto work = boost::asio::make_work_guard(iocontext_);
+   iocontext_.run();
 }
 
 void Server::start() {

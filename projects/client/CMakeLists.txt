@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.1)
-project(client_echo VERSION 0.1.0)
+project(client VERSION 0.1.0)
 
 set(SOURCES 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
@@ -7,10 +7,10 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clientUI.cpp
 )
 
-add_executable(client_echo ${SOURCES})
+add_executable(client ${SOURCES})
 
 target_include_directories(
-  client_echo
+  client
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include/
 )

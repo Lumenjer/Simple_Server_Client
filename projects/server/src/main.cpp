@@ -1,6 +1,9 @@
 #include <iostream>
 #include "server.hpp"
 #include "serverUI.hpp"
+#if BOOST_VERSION < 107000
+#error REQURED BOOST VERSION >= 1.70 
+#endif
 using namespace std;
 
 int main(int argc, char *argv[]) {
